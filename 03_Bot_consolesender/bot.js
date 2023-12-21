@@ -4,7 +4,7 @@ import { Command } from 'commander';
 const program = new Command();
 program.version('1.0.0');
 
-const botToken = 'token';
+const botToken = '5902059328:AAFo8reOP1v-dP0fP1TaQ2__PnCaHBsxc9g';
 const bot = new TelegramBot(botToken, { polling: true });
 
 let chatId = "0";

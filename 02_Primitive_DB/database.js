@@ -8,10 +8,17 @@ async function main() {
 
   while (true) {
     const newUser = await getUserDetails();
-    if (!newUser.name) break;
     users.push(newUser);
     saveDatabase(users);
     console.log('User added successfully.');
+    const cont = await inquirer.prompt({
+      type: 'confirm',
+      name: 'add',
+      message: 'Do you want to continue adding? (Y/N)',
+    });
+    if(!cont.add){
+      break;
+    }
   }
 
   const searchUser = await inquirer.prompt({
@@ -45,7 +52,7 @@ function getUserDetails() {
     {
       type: 'input',
       name: 'name',
-      message: 'Enter the name (Press Enter to finish):',
+      message: 'Enter the name:',
     },
     {
       type: 'list',
