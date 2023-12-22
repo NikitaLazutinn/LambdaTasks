@@ -10,7 +10,33 @@ const bot = new TelegramBot(botToken, { polling: true });
 let chatId = "0";
 
 function processCommand(input) {
-  program.parse(input.split(' '));
+  let stringLength = input.length;
+  let a = [];
+  let str = "";
+  for(let i = 0; i < stringLength; i++)
+  {
+    if(input[i] == ' ')
+    {
+      a.push(str);
+      str = "";
+      continue;
+    }
+      if(input[i] == '\'')
+      {
+          i+=1
+          for(i; input[i] != '\''; i++)
+          {
+              str += input[i]; 
+          }
+          a.push(str);
+          break;
+      }
+      str += input[i];
+  }
+    //console.log(a);
+ // program.parse(input.split(' '));
+ program.parse(a);
+
 
   program
     .command('message <text>')
