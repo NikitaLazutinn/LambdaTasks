@@ -34,8 +34,7 @@ class PriceDataRepository extends BaseRepository<CurrenciesPriceData> {
   }
   async addFav(currencyCode: string){
     try{
-    const a = Database.db('currencies').where('CurrencyCode', '=', currencyCode).update({ FAV: true });
-    const b = await a;
+    await Database.db('currencies').where('CurrencyCode', '=', currencyCode).update({ FAV: true });
     }catch(err){
       console.log(err);
     }
@@ -44,8 +43,7 @@ class PriceDataRepository extends BaseRepository<CurrenciesPriceData> {
 
   async DeleteFav(currencyCode: string){
     try{
-    const a = Database.db('currencies').where('CurrencyCode', '=', currencyCode).update({ FAV: false });
-    const b = await a;
+    await Database.db('currencies').where('CurrencyCode', '=', currencyCode).update({ FAV: false });
     }catch(err){
       console.log(err);
     }
@@ -53,8 +51,7 @@ class PriceDataRepository extends BaseRepository<CurrenciesPriceData> {
   }
 
   async getFav():Promise<string>{
-    const res = Database.db.select('CurrencyCode').from('currencies').where('FAV', true);
-    const CurrencyCodes = await res;
+    const CurrencyCodes = await Database.db.select('CurrencyCode').from('currencies').where('FAV', true);
     let result = "";
     for(let i = 0; i < CurrencyCodes.length; i++){
       const a = await this.getCurrencyInfo(CurrencyCodes[i].CurrencyCode);
