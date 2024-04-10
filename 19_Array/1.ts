@@ -10,6 +10,16 @@ Array.prototype.push = function <T>(this: T[], value: T): number {
   return this.length; 
 };
 
+// Array.prototype.customFilter = function <T>(this: T[][], callback: (value: T[][], index: number, array: T[]) => boolean): T[][] {
+//   const filteredArray: T[][] = [];
+//   for (let i = 0; i < this.length; i++) {
+//     if (callback(this, i, this[i])) {
+//       filteredArray.push(this[i]);
+//     }
+//   }
+//   return filteredArray;
+// };
+
 Array.prototype.customFilter = function <T>(this: T[], callback: (value: T, index: number, array: T[]) => boolean): T[] {
   const filteredArray: T[] = [];
   for (let i = 0; i < this.length; i++) {
@@ -28,8 +38,9 @@ Array.prototype.reverse = function <T>(this: T[]): T[] {
   return reversedArray;
 };
 
-function Check(Array:any[], x:any){
 
+interface AssociateOptions {
+  keys: (string | keyof object)[];
 }
 
 interface Array<T> {
@@ -38,70 +49,84 @@ interface Array<T> {
     forEach(callback: (value: T, index: number, array: T[]) => void): void;
     push(value: T): number;
     multiply(this: Array<number>, multiplier?: number): Array<number>;
-    associateBy<K extends keyof Person>(this: Array<Person>, key1: K, key2?: K): Array<Result>;
-    all(this: Array<T>, func: (v: T) => any): boolean;
-    any(this: Array<T>, func: (v: T) => any): boolean;
+    associateBy(this: Array<object>, options: string[]): (Result | string[])[];
+    all(this: Array<T>, func: (v: T) => void): boolean;
+    any(this: Array<T>, func: (v: T) => void): boolean;
     average(this: Array<number>): number;
     chunked(this: Array<T>, size: number): Array<Array<T>>;
-    distinctBy(this: Array<T>, func?: (v: T) => any): Array<T>;
+    distinctBy(this: Array<T>, func?: (v: T) => void): Array<T>;
     filter1(this: Array<T>, func: (v: T) => boolean): Array<T>;
     filterIndexed(this: Array<number>, func: (v: T, u: T) => boolean): Array<number>;
     filterNot(this: Array<T>, func: (v: T) => boolean): Array<T>;
     find1(this: Array<T>, func: (v: T) => boolean): T;
     findLast(this: Array<T>, func: (v: T) => boolean): T;
-    fold(this: Array<T>, initial: any, func: (acc: any, v: T) => any): any;
-    maxBy(this: Array<T>, func: (v: T) => any): T;
-    minBy(this: Array<T>, func: (v: T) => any): T;
+    fold(this: Array<T>, acc: T, func: (acc: T, elemrnt: T) => void): T;
+    maxBy(this: Array<T>, func: (v: T) => void): T;
+    minBy(this: Array<T>, func: (v: T) => void): T;
     count(this: Array<T>, key?: string): number;
-    groupBy1(this: Array<string>): Array<Array<string>>;
-    groupBy_Key(this: Array<T>, func: (v: T) => any, key:string): { [key: string]: string[] };
-    flatten(this: Array<T>, count?: number): Array<T>;
+    groupBy(this: Array<string>): Array<Array<string>>;
+    groupBy_Key(this: Array<T>, func: (v: T) => string, key:string): { [key: string]: string[] };
+    flatten(this: Array<T>, count?: number): string[];
   }
   
-  type Person = {
-    firstname: string;
-    lastname: string;
-  };
 
   type Result = {
     value: string;
-    element: Person;
+    element: object;
   };
 
 
+  interface MyObject {
+    [key: string]: string; 
+}
   
-  Array.prototype.associateBy = function<K extends keyof Person>(this: Array<Person>, key1: K, key2?: K): Array<Result> {
-    if(key2){
-      let Arr:any[] = [];
-      let resultArr:any[] = [];
-      this.forEach((element) => { 
-        const val1 = element[key1];
-        const val2 = element[key2];
-        Arr.push([val1, val2]);
-      });
+Array.prototype.associateBy = function(this: MyObject[], options: string[]): (Result | string[])[] {
+    if (options.length === 0) {
+      throw new Error('At least one key must be provided.');
+    }
 
-      resultArr.push(Arr[Arr.length-1]);
+    if(options.length > 1){
+       let Arr:string[][] = [];
+       let resultArr:string[][] = [];
+       let values: string[] = [];
+       for(let i = 0; i < this.length; i++){
+        for(let r = 0; r < options.length; r++){
+          values[r] = this[i][options[r]];
+
+        }
+        Arr.push(values);
+        values = [];
+       }
+
+
+       resultArr.push(Arr[Arr.length-1]);
 
       let br = 0;
+      let b = 0;
       for(let r = Arr.length - 2; r >= 0; r--){
-        for(let m = 0; m < Arr[0].length; m++){
-        const value = Arr[r][m];
+
+        for(let i = 0; i < Arr[r].length; i++){
+          if(!Arr[r][i]){
+            b = 1;
+            break;
+        }
+        }
+        if(b){
+          b = 0;
+          continue;
+        }
+
+        const value = Arr[r][0];
 
         for(let i = 0; i < resultArr.length; i++){
-          for(let s = 0; s < resultArr[0].length; s++){
-          if(value === resultArr[i][s]){
+
+          if(value === resultArr[i][0]){
             br = 1;
             break;
           }
-        }
-        if(br){
-          break;
-        }
+
       }
-      // if(br){
-      //   break;
-      // }
-    }
+
     if(br){
       br = 0;
     }else{
@@ -109,15 +134,38 @@ interface Array<T> {
     }
     }
 
-      return resultArr;
+       for(let i = 0; i < resultArr[0].length; i++){
+          if(!resultArr[0][i] && resultArr.length == 1){
+            throw new Error('Unexisting key!');
+          }else if(!resultArr[0][i] && resultArr.length > 1){
+            let newtArr:string[][] = [];
+            for(let r = 0; r < resultArr.length - 1; r++){
+              newtArr[r] = resultArr[r+1];
+            }
+            return newtArr;
+          }
+       }
+       return resultArr;
     }else{
     const Array: Array<Result> = [];
+    let Values: Array<string> = [];
 
     this.forEach((element) => {
-      const value = element[key1];
+      const key = options[0] as keyof typeof element;
+      const value = element[key];
+      Values.push(value);
       const el = {value, element}; 
       Array.push(el);
     });
+
+     for(let i = 0; i < Values.length; i++){
+      if(Values[i]){
+        break;
+      }
+      if(i == Values.length - 1){
+        throw new Error('Wrong key!');
+      }
+     }
 
     let resultArr: Array<Result> = [];
     resultArr.push(Array[Array.length-1]);
@@ -126,7 +174,7 @@ interface Array<T> {
       const value = Array[r]["value"];
 
       for(let i = 0; i < resultArr.length; i++){
-        if(value === resultArr[i]["value"]){
+        if(!value || value === resultArr[i]["value"]){
           break;
         }else if(i === resultArr.length-1){
           resultArr.push(Array[r]);
@@ -134,6 +182,18 @@ interface Array<T> {
         
       }
     }
+
+    
+      if(!resultArr[0]['value'] && resultArr.length == 1){
+        throw new Error('Unexisting key!');
+      }else if(!resultArr[0]['value'] && resultArr.length > 1){
+        let newtArr:Array<Result> = [];
+        for(let r = 0; r < resultArr.length - 1; r++){
+          newtArr[r] = resultArr[r+1];
+        }
+        return newtArr;
+      }
+   
   
     return resultArr;
   }
@@ -154,7 +214,7 @@ interface Array<T> {
     return sum / this.length;
   };
   
-  Array.prototype.all = function (func) {
+  Array.prototype.all = function <T>(func: (f:T) => T) {
     let isAll = true;
     this.forEach((element) => {
     let res = func(element);
@@ -163,7 +223,7 @@ interface Array<T> {
     return isAll;
   };
   
-  Array.prototype.any = function (func) {
+  Array.prototype.any = function <T>(func: (f:T) => T) {
     let isAny = false;
     this.forEach((element) => {
       if (func(element)) isAny = true;
@@ -193,11 +253,11 @@ interface Array<T> {
     return resultArray;
   };
   
-  Array.prototype.distinctBy = function (func) {
+  Array.prototype.distinctBy = function <T>(func: (f:T) => T) {
     if (!func) {
       return Array.from(new Set(this));
     } else {
-      const resultArray:any[] = [];
+      const resultArray:T[] = [];
       this.forEach((element) => {
        if(!func(element)){
         resultArray.push(element);
@@ -208,8 +268,8 @@ interface Array<T> {
     }
   };
   
-  Array.prototype.filter1 = function (func) {
-    const resultArray:any[] = [];
+  Array.prototype.filter1 = function <T>(func: (f:T) => T) {
+    const resultArray:T[] = [];
     this.forEach((element) => {
       if (func(element)) resultArray.push(element);
     });
@@ -226,8 +286,8 @@ interface Array<T> {
     return resultArray;
   };
   
-  Array.prototype.filterNot = function (func) {
-    const resultArr:any[] = [];
+  Array.prototype.filterNot = function <T>(func: (f:T) => T) {
+    const resultArr:T[] = [];
     this.forEach((element) => {
       if (!func(element)) resultArr.push(element);
     });
@@ -252,10 +312,12 @@ interface Array<T> {
   };
   
   Array.prototype.fold = function (initial, func) {
-    this.forEach((element) => {
-      initial = func(initial, element);
-    });
-    return initial;
+
+    for(let i = 0; i < this.length; i++){
+      this[i] = func(initial, this[i]);
+    }
+
+    return this;
   };
   
   Array.prototype.maxBy = function (func) {
@@ -294,15 +356,15 @@ interface Array<T> {
           b = 1;
         }
       });
-      if(b){
-      console.log("error");
-      return 0;
-      }
+      // if(b){
+      // console.log("error");
+      // return 0;
+      // }
       return sum;
     }
   };
   
-  Array.prototype.groupBy1 = function () {
+  Array.prototype.groupBy = function () {
     
     let result: Array<Array<string>> = [];
     let temporary: Array<string> = [];
@@ -354,19 +416,25 @@ interface Array<T> {
     return resultObject;
   };
 
-  Array.prototype.flatten = function () {
-    let isIterable = (object: any) =>
+
+  Array.prototype.flatten = function(){
+    
+  let isIterable = (object:any) =>
     object != null && typeof object[Symbol.iterator] === "function";
     if(typeof this[0] === "string"){
-      isIterable = (object: any) =>
-      object != null && (object.length > 1 || typeof object[0][1] === "string");
+      isIterable = (object:any) =>
+      object != null && (object[0].length > 1);
+       
     }
-  let resArr : Array<any> = this;
+
+  let resArr :any = this;
 
 
     while (resArr.customFilter((el: any) => isIterable(el)).length !== 0) {
-      const stepArr : Array<any> = [];
+      let stepArr = [];
       for(let i = 0; i < resArr.length; i++){
+      //console.log(resArr[i]);
+
 
         if(isIterable(resArr[i])) {
             for(let r = 0; r < resArr[i].length; r++){
@@ -385,59 +453,70 @@ interface Array<T> {
   
   
   // Usage examples
-  // console.log("multiply (Multiply all elements by parameter)");
-  // console.log([1, 2, 3, 4, 5].multiply(2));
-  // console.log("average (Returns an average value of elements in the sequence)");
-  // console.log([2, 3, 4, 7, 9].average());
- // console.log("all (Returns true if all elements match the given function.)");
- // console.log([1, 2, 3, 4, 5].all((value) => value > 3));
-  // console.log("any (Checks if at least 1 elemeent satisfy condition)");
-  // console.log([1, 2, 3, 4, 5].any((value) => value > 3));
-  // console.log("chunked (Splits this sequence into a sequence of lists each not exceeding the given size)");
-  // console.log([1, 2, "f", "d"].chunked(2));
-  // console.log("distinctBy (Returns a sequence containing only elements from the given sequence having distinct keys returned by the given selector function)");
-  // console.log([0,2,2,5].distinctBy((value:any) => value > 3));
-  // console.log("filter1 (Returns a sequence containing only elements matching the given predicate)");
-  // console.log([2, 2, 3, 4, 6].filter1((el) => el % 2 === 0));
-  // console.log("filterIndexed (Returns a sequence of elements which value = index)");
-  //console.log([0,1,4,1,2,3,4,5].filterIndexed((index, element) => index === element));
-  //  console.log("filterNot (Returns a sequence containing only elements not matching the given predicate)");
-  //  console.log([1, 2, 3, 4, 5].filterNot((el) => el % 3 === 0));
-  // console.log("find1 (find first element that satisfy condition)");
-   //console.log([1, 2, 1, 4, 5].find1((el) => el % 3 === 0));
-  // console.log("findLast (find last element that satisfy condition)");
-   //console.log(["ff", "dd", "ss", "aa", "r"].findLast((el) => el.length === 2));
-  // console.log("fold (Accumulates value starting with initial value and applying operation from left to right to current accumulator value and each element.)");
-   //console.log([1,2,3,4,5].fold(0, (initial:number, element:number) => initial + element));
-  // console.log("maxBy (Returns the first element yielding the largest value of the given function)");
-  // console.log([].maxBy((element:number) => element * -2));
-  // console.log("minBy (Returns the first element yielding the smallest value of the given function)");
-  // console.log([1, 2, 3, 4, 5].minBy((element:number) => element * 4));
-  // console.log("flatten (Returns a sequence of all elements from all sequences in this sequence)");
-  //  console.log([1, 2, [3, 4, [5, 6, [7, 8, [9, 10]]]]].flatten());
-  // console.log(["dddd", "dsds", "m", ["dddd", ["mmmmmm"], "rr", ["fdfdf", "dsff",["d", "m"]]]].flatten());
+//   console.log("multiply (Multiply all elements by parameter)");
+//   console.log([1, 2, 3, 4, 5].multiply(2));
+//   console.log("average (Returns an average value of elements in the sequence)");
+//   console.log([2, 3, 4, 7, 9].average());
+//  console.log("all (Returns true if all elements match the given function.)");
+//  console.log([1, 2, 3, 4, 5].all((value) => value > 3));
+//   console.log("any (Checks if at least 1 elemeent satisfy condition)");
+//   console.log([1, 2, 3, 4, 5].any((value) => value > 3));
+//   console.log("chunked (Splits this sequence into a sequence of lists each not exceeding the given size)");
+//  console.log([1, 2, "f", "d"].chunked(0));
+//   console.log("distinctBy (Returns a sequence containing only elements from the given sequence having distinct keys returned by the given selector function)");
+//   console.log([2, 3, 2, 5, 7].distinctBy((value:any) => value > 3));
+//   console.log("filter1 (Returns a sequence containing only elements matching the given predicate)");
+//   console.log([2, 2, 3, 4, 6].filter1((el) => el % 2 === 0));
+//   console.log("filterIndexed (Returns a sequence of elements which value = index)");
+//   console.log([0,1,4,1,2,3,4,5].filterIndexed((index, element) => index === element));
+//    console.log("filterNot (Returns a sequence containing only elements not matching the given predicate)");
+//    console.log([1, 2, 3, 4, 5].filterNot((el) => el % 3 === 0));
+//   console.log("find1 (find first element that satisfy condition)");
+//   console.log([1, 2, 3, 4, 5].find1((el) => el % 2 === 0));
+//   console.log("findLast (find last element that satisfy condition)");
+//    console.log(["ff", "dd", "ss", "aa", "r"].findLast((el) => el.length === 2));
+//   console.log("fold (Accumulates value starting with initial value and applying operation from left to right to current accumulator value and each element.)");
+  //  console.log(["apple", "apricot", "banana", "blueberry", "cherry", "coconut"].fold("", (initial:string, element:string) => {if(element.length % 2 == 0){
+  //   return initial + element;
+  //   }else{ return initial}}));
+
+//   console.log("maxBy (Returns the first element yielding the largest value of the given function)");
+//   console.log([].maxBy((element:number) => element * -2));
+//   console.log("minBy (Returns the first element yielding the smallest value of the given function)");
+//   console.log([1, 2, 3, 4, 5].minBy((element:number) => element * 4));
+//   console.log("flatten (Returns a sequence of all elements from all sequences in this sequence)");
+   // console.log(["1, 2" ,["3, 4,", ["5, 6,", ["3 4"],["7, 8,", ["9, 10"]]]]].flatten());
+ //  console.log(["dddd", "dsds", "m", ["dddd", ["mmmmmm"], "rr", ["fdfdf", "dsff",["d", "m"]]]].flatten());
 
 
-  // const array: Person[] = [
+  // const array = [
+  //   { firstname: "Grace", lastname: "Hopper", population: 2},
+  //   { firstname: "Jacob", lastname: "Bernoulli", population: 2 },   
+  //   { firstname: "Jeb", lastname: "Bernoulli", population: 3 },
+    
+  // ];
+
+  // const array = [
   //   { firstname: "Grace", lastname: "Hopper"},
-  //   { firstname: "Jacob", lastname: "Bernoulli" },
-  //   { firstname: "Johann", lastname: "Bernoulli" },
+  //   { firstname: "Jacob", lastname: "Bernoulli"},
+  //   { firstname: "Johann", lastname: "Bernoulli"},
   // ];
 
-  //  console.log("associateBy (Returns array of values according to key");
-  //  console.log(array.associateBy("firstname", "lastname"));
+  // console.log("associateBy (Returns array of values according to key");
+   // console.log(array.associateBy(["firstname", "lastname", "population"]));
   
-  // const objects1 = [
-  //   { name: 'Anna', number: 1 },
-  //   { name: 'Bill', number: 2 },
-  //   { name: 'Joe', number: 2.5 },
-  // ];
-  // console.log("count (count object values)");
-  // console.log(objects1.count('number'));
+//   const objects1 = [
+//     { name: 'Anna', population: 1 },
+//     { name: 'Bill', population: 2 },
+//     { name: 'Joe', population: 2.5 },
+//     { name: 'Joe'}
+//   ];
+//   // console.log("count (count object values)");
+//    console.log(objects1.count('population'));
   
-//  const groupbytest1 = ["a", "abc","d", "d", "d", "s", "", "ab", "def", "abcd"];
+  //const groupbytest1 = ["a", "abc","d", "d", "d", "s", "", "ab", "def", "abcd"];
 //   console.log("groupBy1 (group by length)");
-//   console.log(groupbytest1.groupBy1());
+   //console.log(groupbytest1.groupBy());
   
   
 //   const objects2 = [
@@ -446,5 +525,5 @@ interface Array<T> {
 //     { name: 'Joe', Work: 'Sciense'},
 //   ];
 //   console.log("groupBy2");
-//   console.log(objects2.groupBy_Key((el:{name:string, Work: string}) => el.Work, "name"));
+  // console.log(objects2.groupBy_Key((el:{name:string, Work: string}) => el.Work, "name"));
   
